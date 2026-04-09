@@ -1,14 +1,20 @@
 import os
+import mlflow.spark
+
 from fastapi import FastAPI, HTTPException
 from pyspark.sql import SparkSession
-from pyspark.ml import PipelineModel
+# from pyspark.ml import PipelineModel
 from pyspark.ml.functions import vector_to_array
 from pyspark.sql.functions import col
 
 from api.schemas import FraudInput
 
+RUN_ID=os.getenv("MODEL_RUN_ID")
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_PATH = os.path.join(BASE_DIR,"models","fraud_rf_pipeline")
+MLFLOW_TRACKING_URI = f"file://{os.path.join(BASE_DIR,'mlruns')}"
+MODEL_URI = f"runs:/{RUN_ID}/fraud_rf_model"
+
+
 
 app = FastAPI(title= "Fraud Detection API")
 
@@ -18,7 +24,8 @@ spark = SparkSession.builder \
         
 spark.sparkContext.setLogLevel("WARN")
 
-model = PipelineModel.load(MODEL_PATH)
+mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+model = mlflow.spark.load_model(MODEL_URI)
 
 @app.get("/")
 def root():
