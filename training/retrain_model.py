@@ -119,8 +119,10 @@ def main():
   
   
   df = load_data(spark)
-  model, feature_cols = train_model(df)
-  auc, f1 = evaluate_model(model, df)
+  train_df, val_df = df.randomSplit([.8,.2], seed = 42)
+  
+  model, feature_cols = train_model(train_df)
+  auc, f1 = evaluate_model(model, val_df)
   
   current_champion_f1 = get_current_champion_f1(client)
   
