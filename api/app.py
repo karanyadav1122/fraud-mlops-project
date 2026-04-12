@@ -1,6 +1,6 @@
 import os
 import mlflow.spark
-
+import mlflow
 from fastapi import FastAPI, HTTPException
 from pyspark.sql import SparkSession
 # from pyspark.ml import PipelineModel
@@ -9,10 +9,10 @@ from pyspark.sql.functions import col
 
 from api.schemas import FraudInput
 
-RUN_ID=os.getenv("MODEL_RUN_ID")
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MLFLOW_TRACKING_URI = f"file://{os.path.join(BASE_DIR,'mlruns')}"
-MODEL_URI = f"runs:/{RUN_ID}/fraud_rf_model"
+MLFLOW_TRACKING_URI = f"sqlite:///{os.path.join(BASE_DIR, 'mlflow.db')}"
+MODEL_URI = "models:/fraud_model@champion"
 
 
 

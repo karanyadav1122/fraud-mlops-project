@@ -9,18 +9,19 @@ from pyspark.ml import Pipeline
 from pyspark.ml.evaluation import BinaryClassificationEvaluator, MulticlassClassificationEvaluator
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MLFLOW_TRACKING_URI = f"file://{os.path.join(BASE_DIR,'mlruns')}"
 GOLD_PATH = os.path.join(BASE_DIR, "data",'gold')
 MODEL_PATH = os.path.join(BASE_DIR,"models","fraud_rf_pipeline")
 
 
 spark = SparkSession.builder \
         .appName("FraudModelTraining") \
+        .config("spark.sql.parquet.compression.codec", "uncompressed")  \
         .getOrCreate()
           
 spark.sparkContext.setLogLevel("WARN")
+spark.conf.set("spark.sql.parquet.compression.codec", "uncompressed")
 
-mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+mlflow.set_tracking_uri("sqlite:///mlflow.db")
 mlflow.set_experiment("fraud-detection-training")
 
 print(f"MLflow tracking URI: ",mlflow.get_tracking_uri())
