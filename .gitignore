@@ -13,3 +13,18 @@ mlruns/
 models/
 notebooks/
 
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# logs
+logs/
+*.log
+
+# Kafka / temp
+*.tmp
+*.swp
+
+
+
