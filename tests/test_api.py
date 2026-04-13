@@ -1,5 +1,16 @@
-def test_predict_schema(monkeypatch):
+from fastapi.testclient import TestClient
+from api.app import app
 
+client = TestClient(app)
+
+
+def test_root():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "running" in response.json()["message"].lower()
+
+
+def test_predict_schema(monkeypatch):
     from pyspark.ml.linalg import Vectors
 
     class MockModel:
@@ -9,7 +20,7 @@ def test_predict_schema(monkeypatch):
 
             return spark.createDataFrame([{
                 "prediction": 1,
-                "probability": Vectors.dense([0.2, 0.8])  # ✅ FIX HERE
+                "probability": Vectors.dense([0.2, 0.8])
             }])
 
     monkeypatch.setattr("api.app.get_model", lambda: MockModel())
