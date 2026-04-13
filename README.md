@@ -1,5 +1,7 @@
 # 🚀 Fraud Detection MLOps Pipeline
 
+[![CI](https://github.com/karanyadav1122/fraud-mlops-project/actions/workflows/ci.yml/badge.svg)](https://github.com/karanyadav1122/fraud-mlops-project/actions/workflows/ci.yml)
+
 ## 📌 Overview
 
 This project implements an **end-to-end real-time fraud detection system** using modern MLOps practices.
