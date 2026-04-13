@@ -1,41 +1,53 @@
-# 🚀 Fraud Detection MLOps Pipeline
+#  Fraud Detection MLOps Pipeline
 
 [![CI](https://github.com/karanyadav1122/fraud-mlops-project/actions/workflows/ci.yml/badge.svg)](https://github.com/karanyadav1122/fraud-mlops-project/actions/workflows/ci.yml)
 
-## 📌 Overview
+---
+
+## Overview
 
 This project implements an **end-to-end real-time fraud detection system** using modern MLOps practices.
 
-It simulates financial transactions, processes them through a streaming data pipeline, and trains a machine learning model with experiment tracking using MLflow.
+It simulates financial transactions, processes them through a streaming data pipeline, serves real-time predictions via an API, and tracks experiments using MLflow.
 
 ---
 
-## 🏗️ Architecture
+##  Architecture
 Kafka Producer
 ↓
 Kafka Topic (transactions_raw)
 ↓
-Spark Bronze Layer (raw ingestion)
+Spark Bronze (raw ingestion)
 ↓
-Spark Silver Layer (clean + validation + quarantine)
+Spark Silver (validation + quarantine)
 ↓
-Spark Gold Layer (feature engineering)
+Spark Gold (feature engineering)
 ↓
 Model Training (PySpark ML)
 ↓
-MLflow (experiment tracking + model logging)
-
+MLflow (tracking + registry)
+↓
+FastAPI (real-time inference)
+↓
+Predictions + Logging
+↓
+Monitoring + Drift Detection
+↓
+Auto Retraining (future)
 
 ---
 
-## 📂 Project Structure
-
+## Project Structure
 
 fraud-mlops-project/
 │
+├── api/
+│ ├── app.py
+│ └── schemas.py
+│
 ├── streaming/
 │ ├── producer.py
-│ └── consumer.py (optional)
+│ └── consumer.py
 │
 ├── spark/
 │ ├── bronze_stream.py
@@ -43,49 +55,60 @@ fraud-mlops-project/
 │ └── gold_stream.py
 │
 ├── training/
-│ └── train_model.py
+│ ├── train_model.py
+│ └── retrain_model.py
 │
-├── data/ # ignored (generated data)
-├── checkpoints/ # ignored (Spark checkpoints)
-├── mlruns/ # ignored (MLflow artifacts)
-├── models/ # ignored (local model storage)
+├── monitoring/
+│ ├── drift_report.py
+│ └── metrics_server.py
 │
-├── .gitignore
+├── tests/
+│
+├── Dockerfile
+├── .dockerignore
+├── .github/workflows/ci.yml
+│
+├── data/ # ignored
+├── checkpoints/ # ignored
+├── mlruns/ # ignored
+├── models/ # ignored
+│
 └── README.md
-
 
 ---
 
-## ⚙️ Technologies Used
+## Technologies Used
 
 - Apache Kafka (Streaming)
 - PySpark Structured Streaming
+- FastAPI (API serving)
+- MLflow (Experiment Tracking & Model Registry)
 - Python
-- MLflow (Experiment Tracking)
-- RandomForest (PySpark ML)
+- Docker
+- GitHub Actions (CI/CD)
 - Faker (Data Simulation)
 
 ---
 
-## 🔄 Data Pipeline
+##  Data Pipeline
 
-### 1️⃣ Producer
+###  Producer
 - Generates synthetic transaction data
 - Sends data to Kafka topic: `transactions_raw`
 
-### 2️⃣ Bronze Layer
+###  Bronze Layer
 - Reads raw Kafka data
 - Stores JSON as-is
 - Acts as raw ingestion layer
 
-### 3️⃣ Silver Layer
+###  Silver Layer
 - Parses JSON into structured schema
 - Filters invalid records
 - Stores:
   - valid → `data/silver`
   - invalid → `data/quarantine`
 
-### 4️⃣ Gold Layer
+###  Gold Layer
 - Feature engineering:
   - `is_high_amount`
   - `is_card_not_present`
@@ -95,81 +118,111 @@ fraud-mlops-project/
 
 ---
 
-## 🤖 Model Training
+##  Real-Time Inference (FastAPI)
 
-- Model: **RandomForestClassifier**
-- Features:
-  - amount
-  - behavioral flags
-  - engineered risk score
+- Exposes `/predict` endpoint
+- Accepts transaction payload
+- Applies trained Spark model
+- Returns fraud probability
 
-### 📊 Metrics:
-- AUC
-- F1-score
-- Accuracy
+### Example Request:
 
----
+```json
+{
+  "amount": 3500,
+  "is_high_amount": 1,
+  "is_card_not_present": 1,
+  "tx_hour": 23,
+  "is_night_tx": 1,
+  "is_risky_payment": 1,
+  "risk_score": 4.5
+}
 
-## 📊 MLflow Integration
+Example Response:
+
+{
+  "prediction": 1,
+  "fraud_probability": 0.82,
+  "non_fraud_probability": 0.18
+}
+
+Model Training
+Model: RandomForestClassifier
+Framework: PySpark ML
+Features:
+Transaction amount
+Behavioral flags
+Engineered risk score
+Metrics:
+AUC
+F1-score
+Accuracy
+MLflow Integration
 
 Tracks:
-- Parameters
-- Metrics
-- Model artifacts
 
-### ▶️ Run MLflow UI
+Parameters
+Metrics
+Model artifacts
 
-```bash
-mlflow ui --backend-store-uri file:///path/to/mlruns --host 0.0.0.0 --port 5000
+Run MLflow UI
 
-Open in browser:
+mlflow ui --backend-store-uri sqlite:///mlflow.db --host 0.0.0.0 --port 5000
+
+Open:
 
 http://localhost:5000
-▶️ How to Run
+
+Monitoring & Drift Detection
+Tracks:
+
+Average transaction amount
+Risk score distribution
+Fraud prediction rate
+
+Detects drift using:
+Percentage change thresholds
+
+
+Example:
+
+if pct_change > threshold:
+    drift_detected = True
+
+CI/CD Pipeline
+
+GitHub Actions workflow includes:
+Linting (flake8)
+Unit testing (pytest)
+Docker build validation
+
+Runs automatically on:
+push
+pull_request    
+
+How to Run (End-to-End)
+
 1. Start Kafka
 
-(Start Zookeeper and Kafka services)
+docker-compose up -d kafka zookeeper
 
-2. Run Producer
-python streaming/producer.py
-3. Run Bronze Stream
-spark-submit \
-  --packages org.apache.spark:spark-sql-kafka-0-10_2.13:4.1.1 \
-  spark/bronze_stream.py
-4. Run Silver Stream
+2. Run Streaming Pipeline
+
+spark-submit spark/bronze_stream.py
 spark-submit spark/silver_stream.py
-5. Run Gold Stream
 spark-submit spark/gold_stream.py
-6. Train Model
+
+3. Train Model
 spark-submit training/train_model.py
 
-Key Features
+4. Start API
+uvicorn api.app:app --host 0.0.0.0 --port 8000
 
-Real-time streaming pipeline
-Medallion architecture (Bronze/Silver/Gold)
-Data validation + quarantine handling
-Feature engineering in streaming
-ML training with PySpark
-Experiment tracking with MLflow
+5. Send Prediction Request
+curl -X POST http://localhost:8000/predict \
+-H "Content-Type: application/json" \
+-d '{...}'
 
-
-Future Improvements
-
-FastAPI real-time inference service
-Kafka consumer for predictions
-Feature store integration (Feast)
-Model registry (MLflow)
-Drift detection & monitoring
-Docker + CI/CD + Kubernetes deployment
-
-
-Key Learnings
-Streaming data pipelines with Kafka + Spark
-Managing offsets and checkpoints
-Medallion architecture design
-ML experiment tracking with MLflow
-Feature engineering in real-time systems
-
- Author
+Author
 
 Karan Yadav
