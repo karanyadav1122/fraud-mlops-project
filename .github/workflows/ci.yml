@@ -3,21 +3,21 @@ name: CI
 on:
   push:
     branches:
-      -main
-      -develop
+      - main
+      - develop
       - '**'
 
-    pull_request:
-      branches:
-        - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
-    steps: 
+    steps:
       - name: Checkout repo
-        uses: action/checkout@v4
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -37,8 +37,8 @@ jobs:
 
       - name: Run tests
         run: |
-          python -mpytest -q
+          python -m pytest -q
 
       - name: Validate Docker build
         run: |
-          docker build -t fraud-mlops-project:test .                          
+          docker build -t fraud-mlops-project:test .
