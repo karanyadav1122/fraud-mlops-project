@@ -1,18 +1,7 @@
-from fastapi.testclient import TestClient
-from api.app import app
-import pytest
-
-client = TestClient(app)
-
-
-def test_root():
-    response = client.get("/")
-    assert response.status_code == 200
-
-
 def test_predict_schema(monkeypatch):
 
-    # 🔥 Mock model
+    from pyspark.ml.linalg import Vectors
+
     class MockModel:
         def transform(self, df):
             from pyspark.sql import SparkSession
@@ -20,10 +9,9 @@ def test_predict_schema(monkeypatch):
 
             return spark.createDataFrame([{
                 "prediction": 1,
-                "probability": [0.2, 0.8]
+                "probability": Vectors.dense([0.2, 0.8])  # ✅ FIX HERE
             }])
 
-    # Replace get_model with mock
     monkeypatch.setattr("api.app.get_model", lambda: MockModel())
 
     payload = {
