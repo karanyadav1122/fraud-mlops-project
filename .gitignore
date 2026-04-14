@@ -26,5 +26,6 @@ logs/
 *.tmp
 *.swp
 
-
+mlartifacts/
+mlflow.db
 
