@@ -1,28 +1,43 @@
 import json
 import time
+import os
 import random
 from datetime import datetime, timezone
+
 from kafka import KafkaProducer
+from kafka.errors import NoBrokersAvailable
 from faker import Faker
 
 fake = Faker()
 
 KAFKA_TOPIC = "transactions_raw"
-KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
 
-producer = KafkaProducer(
-    bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-    value_serializer=lambda x: json.dumps(x).encode("utf-8")
-)
+
+def create_producer(max_retries: int = 10, delay: int = 5) -> KafkaProducer:
+    for attempt in range(1, max_retries + 1):
+        try:
+            producer = KafkaProducer(
+                bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+                value_serializer=lambda x: json.dumps(x).encode("utf-8")
+            )
+            print(f"Connected to Kafka on attempt {attempt}")
+            return producer
+        except NoBrokersAvailable:
+            print(
+                f"Kafka not ready yet. Retrying... ({attempt}/{max_retries})")
+            time.sleep(delay)
+
+    raise RuntimeError("Could not connect to Kafka after multiple retries")
 
 
 def generate_transaction():
-
     amount = round(random.uniform(5, 5000), 2)
     card_present = random.choice([True, False])
     payment_method = random.choice(["credit_card", "debit_card", "upi"])
     merchant_category = random.choice(
-        ["electronics", "fashion", "grocery", "travel", "gaming"])
+        ["electronics", "fashion", "grocery", "travel", "gaming"]
+    )
 
     current_time = datetime.now(timezone.utc)
     timestamp = current_time.isoformat()
@@ -36,10 +51,8 @@ def generate_transaction():
 
     if is_high_amount:
         fraud_score += 1
-
     if is_card_not_present:
         fraud_score += 1
-
     if is_night:
         fraud_score += 1
 
@@ -70,7 +83,8 @@ def generate_transaction():
 
 
 def main():
-    print("Starting fraud transction producer...")
+    print("Starting fraud transaction producer...")
+    producer = create_producer()
 
     while True:
         transaction = generate_transaction()
