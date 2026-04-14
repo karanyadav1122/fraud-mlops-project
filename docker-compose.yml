@@ -1,7 +1,4 @@
-
-
 services:
-
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -34,6 +31,32 @@ services:
       - "8000:8000"
     working_dir: /home/kaya1122/fraud-mlops-project
     volumes:
-      - .:/home/kaya1122/fraud-mlops-project 
+      - .:/home/kaya1122/fraud-mlops-project
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+  producer:
+    build: .
+    container_name: fraud-producer
+    depends_on:
+      - kafka
+    working_dir: /home/kaya1122/fraud-mlops-project
+    volumes:
+      - .:/home/kaya1122/fraud-mlops-project
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    command: ["python", "streaming/producer.py"]
+
+  consumer:
+    build: .
+    container_name: fraud-consumer
+    depends_on:
+      - kafka
+      - api
+    working_dir: /home/kaya1122/fraud-mlops-project
+    volumes:
+      - .:/home/kaya1122/fraud-mlops-project
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      API_URL: http://api:8000/predict
+    command: ["python", "streaming/consumer.py"]  
