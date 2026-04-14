@@ -8,18 +8,19 @@ from pyspark.sql.functions import col
 
 from api.schemas import FraudInput
 
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MLFLOW_TRACKING_URI = f"sqlite:///{os.path.join(BASE_DIR, 'mlflow.db')}"
-MODEL_URI = "models:/fraud_model@champion"
+MLFLOW_TRACKING_URI = "http://mlflow:5000"
+MODEL_URI = "models:/fraud_model/1"
 
 app = FastAPI(title="Fraud Detection API")
 
 spark = SparkSession.builder \
     .appName("FraudPredictionAPI") \
+    .config("spark.sql.parquet.compression.codec", "uncompressed") \
     .getOrCreate()
 
 spark.sparkContext.setLogLevel("WARN")
+spark.conf.set("spark.sql.parquet.compression.codec", "uncompressed")
 
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 

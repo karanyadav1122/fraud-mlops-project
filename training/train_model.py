@@ -21,7 +21,7 @@ spark = SparkSession.builder \
 spark.sparkContext.setLogLevel("WARN")
 spark.conf.set("spark.sql.parquet.compression.codec", "uncompressed")
 
-mlflow.set_tracking_uri("sqlite:///mlflow.db")
+mlflow.set_tracking_uri("http://localhost:5000")
 mlflow.set_experiment("fraud-detection-training")
 
 print("MLflow tracking URI: ", mlflow.get_tracking_uri())
@@ -103,7 +103,11 @@ with mlflow.start_run():
     mlflow.log_metric("f1_score", f1)
     mlflow.log_metric("accuracy", acc)
 
-    mlflow.spark.log_model(model, "fraud_rf_model")
+    model_info = mlflow.spark.log_model(
+    spark_model=model,
+    artifact_path="fraud_rf_model",
+    registered_model_name="fraud_model"
+        )
 
     print("\n=== Fraud model metrics ===")
     print(f"AUC: {auc: .4f}")

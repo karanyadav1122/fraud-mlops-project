@@ -46,6 +46,7 @@ services:
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     command: ["python", "streaming/producer.py"]
+    restart: always
 
   consumer:
     build: .
@@ -59,4 +60,26 @@ services:
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       API_URL: http://api:8000/predict
-    command: ["python", "streaming/consumer.py"]  
+    command: ["python", "streaming/consumer.py"]
+    restart: always
+
+  mlflow:
+    build: .
+    container_name: mlflow
+    working_dir: /home/kaya1122/fraud-mlops-project
+    volumes:
+      - .:/home/kaya1122/fraud-mlops-project
+    ports:
+      - "5000:5000"
+    command:
+      - sh
+      - -c
+      - |
+        mlflow ui \
+          --backend-store-uri sqlite:///mlflow.db \
+          --host 0.0.0.0 \
+          --port 5000 \
+          --serve-artifacts \
+          --allowed-hosts '*'
+        --serve-artifacts \
+        --allowed-hosts '*'
