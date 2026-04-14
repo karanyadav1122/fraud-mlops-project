@@ -26,7 +26,8 @@ def create_consumer(max_retries: int = 10, delay: int = 5) -> KafkaConsumer:
             print(f"Connected consumer to Kafka on attempt {attempt}")
             return consumer
         except NoBrokersAvailable:
-            print(f"Kafka not ready for consumer. Retrying... ({attempt}/{max_retries})")
+            print(
+                f"Kafka not ready for consumer. Retrying... ({attempt}/{max_retries})")
             time.sleep(delay)
 
     raise RuntimeError("Consumer could not connect to Kafka")
@@ -42,7 +43,8 @@ def create_producer(max_retries: int = 10, delay: int = 5) -> KafkaProducer:
             print(f"Connected producer to Kafka on attempt {attempt}")
             return producer
         except NoBrokersAvailable:
-            print(f"Kafka not ready for producer. Retrying... ({attempt}/{max_retries})")
+            print(
+                f"Kafka not ready for producer. Retrying... ({attempt}/{max_retries})")
             time.sleep(delay)
 
     raise RuntimeError("Producer could not connect to Kafka")
@@ -55,10 +57,12 @@ def call_api_with_retry(payload: dict, max_retries: int = 10, delay: int = 5) ->
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            print(f"API not ready or request failed. Retrying... ({attempt}/{max_retries}) | {e}")
+            print(
+                f"API not ready or request failed. Retrying... ({attempt}/{max_retries}) | {e}")
             time.sleep(delay)
 
-    raise RuntimeError("Could not get prediction from API after multiple retries")
+    raise RuntimeError(
+        "Could not get prediction from API after multiple retries")
 
 
 def build_features(event: dict) -> dict:

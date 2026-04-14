@@ -24,7 +24,8 @@ def create_producer(max_retries: int = 10, delay: int = 5) -> KafkaProducer:
             print(f"Connected to Kafka on attempt {attempt}")
             return producer
         except NoBrokersAvailable:
-            print(f"Kafka not ready yet. Retrying... ({attempt}/{max_retries})")
+            print(
+                f"Kafka not ready yet. Retrying... ({attempt}/{max_retries})")
             time.sleep(delay)
 
     raise RuntimeError("Could not connect to Kafka after multiple retries")
