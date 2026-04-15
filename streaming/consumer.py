@@ -1,9 +1,10 @@
-from kafka.errors import NoBrokersAvailable
-from kafka import KafkaConsumer, KafkaProducer
-from features.feature_engineering import build_features_from_event
-import requests
-import time
 import json
+import time
+import requests
+from features.schema import validate_features
+from features.feature_engineering import build_features_from_event
+from kafka import KafkaConsumer, KafkaProducer
+from kafka.errors import NoBrokersAvailable
 import os
 import sys
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -90,6 +91,7 @@ def main():
 
         try:
             features = build_features_from_event(event)
+            validate_features(features)
             save_features_to_store(features)
 
             payload = {
