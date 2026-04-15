@@ -13,8 +13,9 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-GOLD_PATH = os.path.join(BASE_DIR, "data", "gold")
 MODEL_PATH = os.path.join(BASE_DIR, "models", "fraud_rf_pipeline")
+FEATURE_STORE_PATH = os.path.join(BASE_DIR,"data","feature_store","transactions_features")
+
 
 spark = (
     SparkSession.builder
@@ -38,10 +39,10 @@ feature_cols = [
     "tx_hour",
     "is_night_tx",
     "is_risky_payment",
-    "risk_score",
+    "risk_score"
 ]
 
-df = spark.read.json(GOLD_PATH)
+df = spark.read.json(FEATURE_STORE_PATH)
 
 df_model = df.select(*feature_cols, "is_fraud").dropna()
 df_model = df_model.withColumn("label", col("is_fraud").cast("double"))

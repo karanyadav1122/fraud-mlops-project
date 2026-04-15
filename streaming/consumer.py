@@ -1,14 +1,21 @@
-import json
 import os
+import sys
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+import json
 import time
+
 import requests
 
+
+from features.feature_engineering import build_features_from_event
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import NoBrokersAvailable
 
 RAW_TOPIC = "transactions_raw"
 PREDICTION_TOPIC = "fraud_predictions"
-
+FEATURE_STORE_PATH = "data/feature_store/transactions_features"
 BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
 API_URL = os.getenv("API_URL", "http://api:8000/predict")
 
@@ -26,8 +33,7 @@ def create_consumer(max_retries: int = 10, delay: int = 5) -> KafkaConsumer:
             print(f"Connected consumer to Kafka on attempt {attempt}")
             return consumer
         except NoBrokersAvailable:
-            print(
-                f"Kafka not ready for consumer. Retrying... ({attempt}/{max_retries})")
+            print(f"Kafka not ready for consumer. Retrying... ({attempt}/{max_retries})")
             time.sleep(delay)
 
     raise RuntimeError("Consumer could not connect to Kafka")
@@ -43,8 +49,7 @@ def create_producer(max_retries: int = 10, delay: int = 5) -> KafkaProducer:
             print(f"Connected producer to Kafka on attempt {attempt}")
             return producer
         except NoBrokersAvailable:
-            print(
-                f"Kafka not ready for producer. Retrying... ({attempt}/{max_retries})")
+            print(f"Kafka not ready for producer. Retrying... ({attempt}/{max_retries})")
             time.sleep(delay)
 
     raise RuntimeError("Producer could not connect to Kafka")
@@ -57,36 +62,18 @@ def call_api_with_retry(payload: dict, max_retries: int = 10, delay: int = 5) ->
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            print(
-                f"API not ready or request failed. Retrying... ({attempt}/{max_retries}) | {e}")
+            print(f"API not ready or request failed. Retrying... ({attempt}/{max_retries}) | {e}")
             time.sleep(delay)
 
-    raise RuntimeError(
-        "Could not get prediction from API after multiple retries")
+    raise RuntimeError("Could not get prediction from API after multiple retries")
 
 
-def build_features(event: dict) -> dict:
-    amount = event["amount"]
-    card_present = event["card_present"]
+def save_features_to_store(features: dict) -> None:
+    os.makedirs(FEATURE_STORE_PATH, exist_ok=True)
+    feature_file = os.path.join(FEATURE_STORE_PATH, "features.jsonl")
 
-    timestamp = event["timestamp"]
-    tx_hour = int(timestamp[11:13])
-
-    is_high_amount = int(amount > 2000)
-    is_card_not_present = int(not card_present)
-    is_night_tx = int(tx_hour < 6 or tx_hour > 22)
-    is_risky_payment = int((amount > 2000) and (not card_present))
-    risk_score = float(is_high_amount + is_card_not_present + is_night_tx)
-
-    return {
-        "amount": amount,
-        "is_high_amount": is_high_amount,
-        "is_card_not_present": is_card_not_present,
-        "tx_hour": tx_hour,
-        "is_night_tx": is_night_tx,
-        "is_risky_payment": is_risky_payment,
-        "risk_score": risk_score,
-    }
+    with open(feature_file, "a", encoding="utf-8") as f:
+        f.write(json.dumps(features) + "\n")
 
 
 def main():
@@ -100,7 +87,19 @@ def main():
         print(f"Received: {event}")
 
         try:
-            payload = build_features(event)
+            features = build_features_from_event(event)
+            save_features_to_store(features)
+
+            payload = {
+                "amount": features["amount"],
+                "is_high_amount": features["is_high_amount"],
+                "is_card_not_present": features["is_card_not_present"],
+                "tx_hour": features["tx_hour"],
+                "is_night_tx": features["is_night_tx"],
+                "is_risky_payment": features["is_risky_payment"],
+                "risk_score": features["risk_score"],
+            }
+
             prediction = call_api_with_retry(payload)
 
             output = {
