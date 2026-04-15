@@ -14,7 +14,8 @@ from pyspark.sql.functions import col
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "models", "fraud_rf_pipeline")
-FEATURE_STORE_PATH = os.path.join(BASE_DIR,"data","feature_store","transactions_features")
+FEATURE_STORE_PATH = os.path.join(
+    BASE_DIR, "data", "feature_store", "transactions_features")
 
 
 spark = (
