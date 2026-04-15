@@ -10,7 +10,7 @@ from api.schemas import FraudInput
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MLFLOW_TRACKING_URI = "http://mlflow:5000"
-MODEL_URI = "models:/fraud_model/1"
+MODEL_URI = "models:/fraud_model@champion"
 
 app = FastAPI(title="Fraud Detection API")
 
@@ -77,7 +77,6 @@ def predict(data: FraudInput):
             "fraud_probability": fraud_probability,
             "non_fraud_probability": float(probabilities[0])
         }
-
     except HTTPException:
         raise
     except Exception as e:
