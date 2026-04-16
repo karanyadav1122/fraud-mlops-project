@@ -10,25 +10,26 @@ import mlflow.spark
 from mlflow.tracking import MlflowClient
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_PATH = os.path.join(BASE_DIR, "data", "predictions", "predictions.jsonl")
-MLFLOW_TRACKING_URI = f"sqlite:///{os.path.join(BASE_DIR, 'mlflow.db')}"
+FEATURE_STORE_PATH = os.path.join(
+    BASE_DIR, "data", "feature_store", "transactions_features")
+MLFLOW_TRACKING_URI = "http://localhost:5000"
 REGISTERED_MODEL_NAME = "fraud_model"
 EXPERIMENT_NAME = "fraud-detection-retraining"
 
 
 def load_data(spark):
 
-    df = spark.read.json(DATA_PATH)
+    df = spark.read.json(FEATURE_STORE_PATH)
 
     df = df.select(
-        col("features.amount").alias("amount"),
-        col("features.risk_score").alias("risk_score"),
-        col("features.tx_hour").alias("tx_hour"),
-        col("features.is_high_amount").alias("is_high_amount"),
-        col("features.is_card_not_present").alias("is_card_not_present"),
-        col("features.is_night_tx").alias("is_night_tx"),
-        col("features.is_risky_payment").alias("is_risky_payment"),
-        col("prediction.prediction").cast("double").alias("label")
+        col("amount"),
+        col("risk_score"),
+        col("tx_hour"),
+        col("is_high_amount"),
+        col("is_card_not_present"),
+        col("is_night_tx"),
+        col("is_risky_payment"),
+        col("is_fraud").cast("double").alias("label"),
     ).dropna()
 
     return df
@@ -91,7 +92,7 @@ def get_current_champion_f1(client: MlflowClient) -> float | None:
         champion = client.get_model_version_by_alias(
             REGISTERED_MODEL_NAME, "champion")
         run = client.get_run(champion.run_id)
-        return run.data.metrics.get("f1")
+        return run.data.metrics.get("f1_score")
     except Exception:
         return None
 
@@ -135,7 +136,7 @@ def main():
         mlflow.log_param("feature_cols", ",".join(feature_cols))
 
         mlflow.log_metric("auc", auc)
-        mlflow.log_metric("f1", f1)
+        mlflow.log_metric("f1_score", f1)
 
         mlflow.spark.log_model(
             model,

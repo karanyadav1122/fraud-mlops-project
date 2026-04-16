@@ -1,12 +1,12 @@
+from features.schema import validate_features
+from features.feature_engineering import build_features_from_event
+import os
+import sys
 import json
 import time
 import requests
-from features.schema import validate_features
-from features.feature_engineering import build_features_from_event
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import NoBrokersAvailable
-import os
-import sys
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
